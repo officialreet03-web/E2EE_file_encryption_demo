@@ -19,7 +19,7 @@ async function encryptFile() {
   );
   // for creeating a random initialization vector
   const randomIV = crypto.getRandomValues(new Uint8Array(12));
-  // now encrypt the file data
+  // now encrypt the selected file data using AES-GCM
   const encryptedBuffer = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: randomIV },
     secretKey,
