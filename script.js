@@ -1,53 +1,42 @@
 async function encryptFile() {
-  const fileInput = document.getElementById("fileInput");
-  const status = document.getElementById("status");
-
-  if (fileInput.files.length === 0) {
-    status.innerText = "Please select a file first.";
+  // to get file input and status text from HTML
+  const input = document.getElementById("fileInput");
+  const message = document.getElementById("status");
+  // to check if user has selected a file
+  if (input.files.length === 0) {
+    message.innerText = "No file selected.";
     return;
   }
-
-  const file = fileInput.files[0];
-  const fileData = await file.arrayBuffer();
-
-  // Generate AES-GCM key
-  const key = await crypto.subtle.generateKey(
-    {
-      name: "AES-GCM",
-      length: 256
-    },
+  //to take the first selected file
+  const selectedFile = input.files[0];
+  // to convert file into binary format
+  const data = await selectedFile.arrayBuffer();
+  // to create a secret key for encryption
+  const secretKey = await crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 },
     true,
     ["encrypt", "decrypt"]
   );
-
-  // Generate random IV
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-
-  // Encrypt file data
-  const encryptedData = await crypto.subtle.encrypt(
-    {
-      name: "AES-GCM",
-      iv: iv
-    },
-    key,
-    fileData
+  // for creeating a random initialization vector
+  const randomIV = crypto.getRandomValues(new Uint8Array(12));
+  // now encrypt the file data
+  const encryptedBuffer = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: randomIV },
+    secretKey,
+    data);
+  // merging IV and encrypted data
+  const finalData = new Uint8Array(
+    randomIV.length + encryptedBuffer.byteLength
   );
-
-  // Combine IV + encrypted data
-  const combinedData = new Uint8Array(iv.byteLength + encryptedData.byteLength);
-  combinedData.set(iv, 0);
-  combinedData.set(new Uint8Array(encryptedData), iv.byteLength);
-
-  // Create encrypted file download
-  const blob = new Blob([combinedData]);
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-a.href = url;
-a.download = file.name + ".enc";
-document.body.appendChild(a);
-a.click();
-document.body.removeChild(a);
-
-  status.innerText = "File encrypted and downloaded successfully.";
+  finalData.set(randomIV, 0);
+  finalData.set(new Uint8Array(encryptedBuffer), randomIV.length);
+  // for converting encrypted data to downloadable file
+  const encryptedFile = new Blob([finalData]);
+  const downloadLink = document.createElement("a");
+  downloadLink.href = URL.createObjectURL(encryptedFile);
+  downloadLink.download = selectedFile.name + ".enc";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+  message.innerText = "File encrypted successfully.";
 }
